@@ -31,7 +31,7 @@ prefixes = ['']
 rs_username = ''
 rs_apikey = ''
 rs_region = 'DFW'
-rs_loginurl = 'https://auth.api.rackspacecloud.com/v1.1/auth'
+rs_loginurl = 'https://identity.api.rackspacecloud.com/v2.0/'
 
 from cloudfiles import CloudFiles
 from threadeddeleter import ThreadedDeleter

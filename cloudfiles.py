@@ -84,11 +84,55 @@ class CloudFiles(ObjectStore):
         curl_handle.perform()
         return buffer.getvalue()
 
+    def login_v2(self):
+        """
+        Logs into cloud files and obtains/stores an authorization token
+        Uses API v2
+        :return: None
+        """
+        xml = builder.E.auth(
+            builder.E.apiKeyCredentials(
+                xmlns='http://docs.rackspace.com/identity/api/ext/RAX-KSKEY/v1.0',
+                username=self.username,
+                apiKey=self.api_key)
+        )
+        namespace = 'http://docs.openstack.org/identity/api/v2.0'
+        request = '<?xml version="1.0" encoding="UTF-8"?>' + etree.tostring(xml)
+        request_headers = ['Content-Type: application/xml',
+                           'Accept: application/xml']
+        ch = pycurl.Curl()
+        response = self.curl_request(self.login_url + '/tokens', ch, request,
+                                     request_headers)
+        ch.close()
+        response = etree.fromstring(response)
+        auth_errno = response.xpath('//ns:unauthorized/@code',
+                                    namespaces={'ns': namespace})
+        auth_error = response.xpath('//ns:unauthorized/ns:message',
+                                    namespaces={'ns': namespace})
+        if len(auth_errno) > 0 and len(auth_error) > 0:
+            raise Exception(
+                'Login error [%s]: %s' % (auth_errno[0], auth_error[0].text))
+        try:
+            self.auth_token = response.xpath('//ns:access/ns:token/@id',
+                                             namespaces={'ns': namespace})[0]
+            self.api_endpoint = response.xpath(
+                '//ns:access/ns:serviceCatalog/ns:service['
+                '@name="cloudFiles"]/ns:endpoint[@region="' + self.region +
+                '"]/@publicURL',
+                namespaces={'ns': namespace})[0]
+        except IndexError:
+            raise Exception(
+                'Bad response received on login request: %s' % etree.tostring(
+                    response))
+
     def login(self):
         """
         Logs into cloud files and obtains/stores an authorization token
         :return: None
         """
+
+        if '2.0' in self.login_url:
+            return self.login_v2()
 
         namespace = 'http://docs.rackspacecloud.com/auth/api/v1.1'
         xml = builder.E.credentials(
