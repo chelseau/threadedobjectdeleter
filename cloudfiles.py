@@ -7,6 +7,7 @@ __license__ = "GPL"
 __email__ = "info@chelseau.com"
 
 from StringIO import StringIO
+from urllib import quote
 
 import pycurl
 from lxml import builder, etree
@@ -17,7 +18,7 @@ from objectstore import ObjectStore
 class CloudFiles(ObjectStore):
     """A ObjectStore class for Rackspace Cloud Files"""
 
-    def __init__(self, username, api_key, region, login_url):
+    def __init__(self, username, api_key, region, login_url, bulk_size):
         """
         Initialize all our variables
         :return: None
@@ -28,6 +29,9 @@ class CloudFiles(ObjectStore):
         self.api_key = api_key
         self.region = region
         self.login_url = login_url
+        self.bulk_size = bulk_size
+        self.force_delete = False
+        self.marker = {}
 
         self.last_headers = {}
         self.last_code = None
@@ -70,7 +74,7 @@ class CloudFiles(ObjectStore):
         self.last_code = None
         self.last_status = None
         buffer = StringIO()
-        curl_handle.setopt(curl_handle.URL, url.replace(' ', '%20'))
+        curl_handle.setopt(curl_handle.URL, url)
         if headers is not None:
             curl_handle.setopt(curl_handle.HTTPHEADER, headers)
         curl_handle.setopt(curl_handle.WRITEDATA, buffer)
@@ -92,7 +96,8 @@ class CloudFiles(ObjectStore):
         """
         xml = builder.E.auth(
             builder.E.apiKeyCredentials(
-                xmlns='http://docs.rackspace.com/identity/api/ext/RAX-KSKEY/v1.0',
+                xmlns='http://docs.rackspace.com/identity/api/ext/RAX-KSKEY'
+                      '/v1.0',
                 username=self.username,
                 apiKey=self.api_key)
         )
@@ -189,23 +194,52 @@ class CloudFiles(ObjectStore):
                     containers.append(container)
         return containers
 
-    def list_objects(self, container):
+    def list_objects(self, container, recheck=False):
         """
         Lists objects in a given container
         :param container: The name of the container to get objects from
         :return: A list of objects
         """
+        self.force_delete = True
         request_headers = ['X-Auth-Token: ' + self.auth_token]
         ch = pycurl.Curl()
+        params = ''
+        if container in self.marker:
+            params = '?marker=' + quote(self.marker[container])
         response = self.curl_request(
-            self.api_endpoint + '/' + container, ch, None,
+            self.api_endpoint + '/' + quote(container) + params, ch, None,
             request_headers, 'GET')
         ch.close()
         if self.last_code < 200 or self.last_code > 299:
             raise Exception(
                 ('HTTP Error (List Objects) %s: %s\n%s', self.last_headers) % (
                     self.last_code, self.last_status))
-        return filter(None, response.split('\n'))
+        response = filter(None, response.split('\n'))
+        if len(response) > 0:
+            self.marker[container] = response[-1]
+            return response
+        else:
+            if recheck:
+                return response
+            if container in self.marker:
+                del self.marker[container]
+            return self.list_objects(container, True)
+
+    def delete_objects_bulk(self, local):
+        if len(local.data) > 0:
+            local.processed += len(local.data)
+            if local.processed % (self.bulk_size * 2) == 0:
+                # Connections can easily become unusable. We don't want a thread
+                # to become unusable for long. Lets reset our cURL connection
+                # if it is unitialized, or has already been used 19 times.
+                local.ch = pycurl.Curl()
+            request_headers = ['X-Auth-Token: ' + self.auth_token,
+                               'Content-Type: text/plain']
+            self.curl_request(
+                self.api_endpoint + '/?bulk-delete', local.ch,
+                '\n'.join(local.data), request_headers, 'DELETE', False)
+            local.data = []
+
 
     def delete_object(self, container, object, local):
         """
@@ -216,19 +250,28 @@ class CloudFiles(ObjectStore):
          variables in.
         :return: None
         """
-        local.processed += 1
-        if local.processed % 20 == 0:
-            # Connections can easily become unusable. We don't want a thread
-            # to become unusable for long. Lets reset our cURL connection
-            # if it is unitialized, or has already been used 19 times.
-            local.ch = pycurl.Curl()
         request_headers = ['X-Auth-Token: ' + self.auth_token]
-        self.curl_request(
-            self.api_endpoint + '/' + container + '/' + object, local.ch,
-            None, request_headers, 'DELETE', False)
-        # We can't really do error checking on these because self.last_code
-        # and self.last_status are not thread safe. If this becomes an issue,
-        # I will implement that via the Local object
+        if self.bulk_size <= 1:
+            local.processed += 1
+            if local.processed % 20 == 0:
+                # Connections can easily become unusable. We don't want a thread
+                # to become unusable for long. Lets reset our cURL connection
+                # if it is unitialized, or has already been used 19 times.
+                local.ch = pycurl.Curl()
+            self.curl_request(
+                self.api_endpoint + '/' + quote(
+                    container) + '/' + quote(object), local.ch,
+                None, request_headers, 'DELETE', False)
+        else:
+            local.data.append('/' + container + '/' + object)
+            if len(local.data) >= self.bulk_size or self.force_delete:
+                self.force_delete = False
+                self.delete_objects_bulk(local)
+                # We can't really do error checking on these because
+                # self.last_code
+                # and self.last_status are not thread safe. If this becomes
+                # an issue,
+                # I will implement that via the Local object
 
     def init_local(self, local):
         """
@@ -238,6 +281,7 @@ class CloudFiles(ObjectStore):
         """
         local.processed = 0
         local.ch = pycurl.Curl()
+        local.data = []
 
     def cleanup_local(self, local):
         """
@@ -245,6 +289,9 @@ class CloudFiles(ObjectStore):
         :param local: The Local object
         :return: None
         """
+
+        # Delete any remaining objects first if using bulk deletions
+        self.delete_objects_bulk(local)
         local.ch.close()
 
     def delete_container(self, container):

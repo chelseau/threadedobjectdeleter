@@ -19,8 +19,8 @@ __email__ = "info@chelseau.com"
 # Settings
 
 # Maximum threads to use at once
-max_threads = 100
-queue_size = max_threads * 2
+max_threads = 64
+queue_size = max_threads * 256 * 2
 
 # Should we output while we go or be silent?
 verbose = True
@@ -34,11 +34,14 @@ rs_apikey = ''
 rs_region = 'DFW'
 rs_loginurl = 'https://identity.api.rackspacecloud.com/v2.0/'
 
+# Maximum size of a bulk deletion request
+rs_bulksize = queue_size / max_threads / 2
+
 from cloudfiles import CloudFiles
 from threadeddeleter import ThreadedDeleter
 
 # Initialize Cloud Files, login
-cf = CloudFiles(rs_username, rs_apikey, rs_region, rs_loginurl)
+cf = CloudFiles(rs_username, rs_apikey, rs_region, rs_loginurl, rs_bulksize)
 
 # Initialize threaded deleter
 deleter = ThreadedDeleter(cf, queue_size, max_threads, verbose)
