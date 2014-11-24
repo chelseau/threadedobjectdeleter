@@ -210,10 +210,15 @@ class CloudFiles(ObjectStore):
             self.api_endpoint + '/' + quote(container) + params, ch, None,
             request_headers, 'GET')
         ch.close()
+        # Sometimes list_containers returns containers that have already been
+        # deleted. So if it's a 404, lets not consider it a fatal error
+        if self.last_code == 404:
+            print 'Warning: 404 when trying to list objects for %s' % container
+            return []
         if self.last_code < 200 or self.last_code > 299:
             raise Exception(
-                ('HTTP Error (List Objects) %s: %s\n%s', self.last_headers) % (
-                    self.last_code, self.last_status))
+                'HTTP Error (List Objects) %s: %s\n' % (
+                    self.last_code, self.last_status), self.last_headers)
         response = filter(None, response.split('\n'))
         if len(response) > 0:
             self.marker[container] = response[-1]
@@ -305,7 +310,9 @@ class CloudFiles(ObjectStore):
         self.curl_request(
             self.api_endpoint + '/' + container, ch, None,
             request_headers, 'DELETE')
-        if self.last_code < 200 or self.last_code > 299:
+        if self.last_code == 404:
+            print 'Warning: 404 when trying to delete container %s' % container
+        elif self.last_code < 200 or self.last_code > 299:
             raise Exception('HTTP Error (Delete Container) %s: %s' % (
                 self.last_code, self.last_status))
         ch.close()
