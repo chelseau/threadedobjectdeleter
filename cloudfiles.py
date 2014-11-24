@@ -198,13 +198,14 @@ class CloudFiles(ObjectStore):
         """
         Lists objects in a given container
         :param container: The name of the container to get objects from
+        :param recheck: Should we recheck everything?
         :return: A list of objects
         """
         self.force_delete = True
         request_headers = ['X-Auth-Token: ' + self.auth_token]
         ch = pycurl.Curl()
         params = ''
-        if container in self.marker:
+        if not recheck and container in self.marker:
             params = '?marker=' + quote(self.marker[container])
         response = self.curl_request(
             self.api_endpoint + '/' + quote(container) + params, ch, None,
@@ -222,13 +223,7 @@ class CloudFiles(ObjectStore):
         response = filter(None, response.split('\n'))
         if len(response) > 0:
             self.marker[container] = response[-1]
-            return response
-        else:
-            if recheck:
-                return response
-            if container in self.marker:
-                del self.marker[container]
-            return self.list_objects(container, True)
+        return response
 
     def delete_objects_bulk(self, local):
         if len(local.data) > 0:

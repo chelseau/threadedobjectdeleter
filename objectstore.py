@@ -29,10 +29,11 @@ class ObjectStore:
         """
 
     @abstractmethod
-    def list_objects(self, container):
+    def list_objects(self, container, recheck):
         """
         Lists objects in a given container
         :param container: The name of the container to get objects from
+        :param recheck: Should we recheck everything?
         :return: A list of objects
         """
 
