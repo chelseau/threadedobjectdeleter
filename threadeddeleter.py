@@ -13,6 +13,13 @@ import time
 class ThreadedDeleter:
     """A class for managing and controlling deletion threads."""
 
+    @staticmethod
+    def output(text):
+        ThreadedDeleter.output_lock.acquire()
+        print '[%s] %s' % (time.ctime(), text)
+        ThreadedDeleter.output_lock.release()
+
+
     def __init__(self, object_store, queue_size, max_threads, verbose=False):
         """
         Initializes a threaded deleter class.
@@ -49,8 +56,8 @@ class ThreadedDeleter:
                 container, object = self.queue.get()
                 self.lock.release()
                 if self.verbose:
-                    print '[%s] [Thread %s] Deleting %s...' % (
-                        time.ctime(), thread_id, object)
+                    ThreadedDeleter.output('[Thread %s] Deleting %s...' % (
+                        thread_id, object))
                 try:
                     self.object_store.delete_object(container, object, local)
                 except Exception:
@@ -96,7 +103,7 @@ class ThreadedDeleter:
     def delete(self, prefixes):
         # Login
         if self.verbose:
-            print '[%s] Logging in...' % time.ctime()
+            ThreadedDeleter.output('Logging in...')
         try:
             self.object_store.login()
         except Exception:
@@ -105,7 +112,7 @@ class ThreadedDeleter:
 
         # Fetch matching containers
         if self.verbose:
-            print '[%s] Fetching containers...' % time.ctime()
+            ThreadedDeleter.output('Fetching containers...')
         try:
             containers = self.object_store.list_containers(prefixes)
         except Exception:
@@ -125,7 +132,7 @@ class ThreadedDeleter:
         for final in [False, True]:
             for container in containers:
                 if self.verbose:
-                    print '[%s] Processing %s...' % (time.ctime(), container)
+                    ThreadedDeleter.output('Processing %s...' % container)
                 final = False
                 while True:
                     # Keep trying until we run out of files for object stores
@@ -143,7 +150,7 @@ class ThreadedDeleter:
                         # continue
                         if len(data) > self.max_threads / 2:
                             # We've got enough of a buffer to get going. Lets
-                            #  do it!
+                            # do it!
                             self.add_to_queue(data)
                             data = []
                     while self.queue.qsize() > self.max_threads / 2:
@@ -156,8 +163,8 @@ class ThreadedDeleter:
                         self.add_to_queue(data)
                         data = []
                 if final:
-                    print '[%s] Finished Processing %s...' % (
-                        time.ctime(), container)
+                    ThreadedDeleter.output(
+                        'Finished Processing %s...' % container)
                     # All out of files!
             # Wait for all the data to be processed before we continue.
             while not self.queue.empty():
@@ -171,7 +178,7 @@ class ThreadedDeleter:
         # Iterate the containers again and delete them.
         for container in containers:
             if self.verbose:
-                print '[%s] Deleting %s...' % (time.ctime(), container)
+                ThreadedDeleter.output('Deleting %s...' % container)
             try:
                 self.object_store.delete_container(container)
             except Exception:
@@ -182,12 +189,13 @@ class ThreadedDeleter:
         end_time = time.time()
 
         if len(containers) == 0 and self.verbose:
-            print '[%s] There are no containers!' % time.ctime()
+            ThreadedDeleter.output('There are no containers!')
         elif self.verbose:
             # Output status
-            print '[%s] Deleted %s objects from %s containers in %s seconds' % (
-                time.ctime(), self.deleted_objects, len(containers),
-                (end_time - start_time))
+            ThreadedDeleter.output(
+                'Deleted %s objects from %s containers in %s seconds' % (
+                    self.deleted_objects, len(containers),
+                    (end_time - start_time)))
 
     def finish(self):
         """
@@ -200,3 +208,6 @@ class ThreadedDeleter:
             # Wait for all the threads to finish working
             for thread in self.threads:
                 thread.join()
+
+
+ThreadedDeleter.output_lock = threading.Lock()

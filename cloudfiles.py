@@ -13,6 +13,7 @@ import pycurl
 from lxml import builder, etree
 
 from objectstore import ObjectStore
+from threadeddeleter import ThreadedDeleter
 
 
 class CloudFiles(ObjectStore):
@@ -214,7 +215,8 @@ class CloudFiles(ObjectStore):
         # Sometimes list_containers returns containers that have already been
         # deleted. So if it's a 404, lets not consider it a fatal error
         if self.last_code == 404:
-            print 'Warning: 404 when trying to list objects for %s' % container
+            ThreadedDeleter.output(
+                'Warning: 404 when trying to list objects for %s' % container)
             return []
         if self.last_code < 200 or self.last_code > 299:
             raise Exception(
@@ -250,6 +252,7 @@ class CloudFiles(ObjectStore):
          variables in.
         :return: None
         """
+
         request_headers = ['X-Auth-Token: ' + self.auth_token]
         if self.bulk_size <= 1:
             local.processed += 1
@@ -306,7 +309,8 @@ class CloudFiles(ObjectStore):
             self.api_endpoint + '/' + container, ch, None,
             request_headers, 'DELETE')
         if self.last_code == 404:
-            print 'Warning: 404 when trying to delete container %s' % container
+            ThreadedDeleter.output(
+                'Warning: 404 when trying to delete container %s' % container)
         elif self.last_code < 200 or self.last_code > 299:
             raise Exception('HTTP Error (Delete Container) %s: %s' % (
                 self.last_code, self.last_status))
