@@ -20,6 +20,7 @@ __email__ = "info@chelseau.com"
 
 # Maximum threads to use at once
 max_threads = 100
+queue_size = max_threads * 2
 
 # Should we output while we go or be silent?
 verbose = True
@@ -40,7 +41,7 @@ from threadeddeleter import ThreadedDeleter
 cf = CloudFiles(rs_username, rs_apikey, rs_region, rs_loginurl)
 
 # Initialize threaded deleter
-deleter = ThreadedDeleter(cf, max_threads, verbose)
+deleter = ThreadedDeleter(cf, queue_size, max_threads, verbose)
 
 try:
     deleter.delete(prefixes)

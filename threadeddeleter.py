@@ -13,7 +13,7 @@ import time
 class ThreadedDeleter:
     """A class for managing and controlling deletion threads."""
 
-    def __init__(self, object_store, max_threads, verbose=False):
+    def __init__(self, object_store, queue_size, max_threads, verbose=False):
         """
         Initializes a threaded deleter class.
         :param object_store: The object store we're working with
@@ -22,11 +22,12 @@ class ThreadedDeleter:
         :return: None
         """
         self.object_store = object_store
+        self.queue_size = queue_size
         self.max_threads = max_threads
         self.verbose = verbose
 
         self.lock = threading.Lock()
-        self.queue = Queue.Queue(self.max_threads * 2)
+        self.queue = Queue.Queue(queue_size)
         self.finished = False
         self.deleted_objects = 0
         self.threads = []
