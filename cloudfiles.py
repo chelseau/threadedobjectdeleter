@@ -219,9 +219,20 @@ class CloudFiles(ObjectStore):
                 'Warning: 404 when trying to list objects for %s' % container)
             return []
         if self.last_code < 200 or self.last_code > 299:
-            raise Exception(
-                'HTTP Error (List Objects) %s: %s\n' % (
-                    self.last_code, self.last_status), self.last_headers)
+            ThreadedDeleter.output(
+                'Warning: %s when trying to list objects for %s' % (
+                    self.last_code, container))
+            # Login again
+            self.login()
+            ch = pycurl.Curl()
+            response = self.curl_request(
+                self.api_endpoint + '/' + quote(container) + params, ch, None,
+                request_headers, 'GET')
+            ch.close()
+            if self.last_code < 200 or self.last_code > 299:
+                raise Exception(
+                    'HTTP Error (List Objects) %s: %s\n' % (
+                        self.last_code, self.last_status), self.last_headers)
         response = filter(None, response.split('\n'))
         if len(response) > 0:
             self.marker[container] = response[-1]
