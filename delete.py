@@ -46,8 +46,5 @@ cf = CloudFiles(rs_username, rs_apikey, rs_region, rs_loginurl, rs_bulksize)
 # Initialize threaded deleter
 deleter = ThreadedDeleter(cf, queue_size, max_threads, verbose)
 
-try:
+with deleter:
     deleter.delete(prefixes)
-except Exception:
-    deleter.finish()
-    raise

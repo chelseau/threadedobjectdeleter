@@ -5,6 +5,8 @@ __copyright__ = "Copyright 2014, Chelsea Urquhart"
 __license__ = "GPL"
 __email__ = "info@chelseau.com"
 
+import os
+import signal
 import threading
 import Queue
 import time
@@ -19,6 +21,22 @@ class ThreadedDeleter:
         print '[%s] %s' % (time.ctime(), text)
         ThreadedDeleter.output_lock.release()
 
+    def signal_handler(self, signum, frame):
+        """
+        Handles signals. This is responsible for handling SIGINT, SIGTERM,
+        and SIGHUP.
+        :param signum: The signal that we received
+        :param frame: The frame info
+        :return: None
+        """
+        # Shut down all the threads.
+        self.finish()
+
+        # Remove handler
+        signal.signal(signum, signal.SIG_DFL)
+
+        # Throw signal
+        os.kill(os.getpid(), signum)
 
     def __init__(self, object_store, queue_size, max_threads, verbose=False):
         """
@@ -38,6 +56,28 @@ class ThreadedDeleter:
         self.finished = False
         self.deleted_objects = 0
         self.threads = []
+
+    def __enter__(self):
+        """
+        Setup the class. This registers a signal handler to make sure we can
+        shut down cleanly
+        :return: self
+        """
+        # Register signal handlers
+        signal.signal(signal.SIGINT, self.signal_handler)
+        signal.signal(signal.SIGTERM, self.signal_handler)
+        signal.signal(signal.SIGHUP, self.signal_handler)
+        return self
+
+    def __exit__(self, exc_type, exc_value, traceback):
+        """
+        Destroy the class. This is responsible for thread shutdown.
+        :param exc_type: The type of exception that was thrown
+        :param exc_value: The value of said exception
+        :param traceback: The traceback
+        :return: None
+        """
+        self.finish()
 
     def delete_object(self, thread_id):
         """
