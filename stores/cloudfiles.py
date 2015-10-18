@@ -24,9 +24,9 @@ class Store(ObjectStore):
         :return: A string
         """
         if retries == 0:
-            return 'All retries exhausted.'
+            return ' All retries exhausted.'
         else:
-            return 'Retrying {} more times.'.format(retries)
+            return ' Retrying {} more times.'.format(retries)
 
     def __init__(self, parser):
         """
@@ -89,11 +89,11 @@ class Store(ObjectStore):
                 return False
         except pyrax.exceptions.AuthenticationFailed as e:
             ThreadedDeleter.output('Authentication failed: {msg}'.format(
-                msg=e.message))
+                msg=str(e)))
             return False
         except pyrax.exceptions.PyraxException as e:
             ThreadedDeleter.output('Unknown error occurred: {msg}'.format(
-                msg=e.message))
+                msg=str(e)))
             return False
 
         return True
@@ -114,7 +114,7 @@ class Store(ObjectStore):
                 containers_ = self.rax.list(prefix=prefix)
             except Exception as e:
                 ThreadedDeleter.output('List containers failed: {msg}.{retry}'
-                                       .format(msg=e.message,
+                                       .format(msg=str(e),
                                                retry=self.get_retry_text(
                                                    retry)))
                 if retry == 0:
@@ -145,7 +145,7 @@ class Store(ObjectStore):
             objects_ = container.list(marker=marker)
         except Exception as e:
             ThreadedDeleter.output('List objects failed: {msg}.{retry}'
-                                   .format(msg=e.message,
+                                   .format(msg=str(e),
                                            retry=self.get_retry_text(retry)))
             if retry == 0:
                 return False
@@ -165,7 +165,9 @@ class Store(ObjectStore):
 
     def delete_objects_bulk(self, local):
         if local.size > 0:
-            for container, objects in local.data.iteritems():
+            for container, objects in local.data.iteritems()\
+                    if hasattr(local.data, 'iteritems')\
+                    else local.data.items():
                 self.rax.bulk_delete(container, objects)
         local.size = 0
         local.data = dict()
@@ -221,7 +223,7 @@ class Store(ObjectStore):
             return True
         except Exception as e:
             ThreadedDeleter.output('Delete container failed: {msg}.{retry}'
-                                   .format(msg=e.message,
+                                   .format(msg=str(e),
                                            retry=self.get_retry_text(retry)))
             if retry == 0:
                 return False

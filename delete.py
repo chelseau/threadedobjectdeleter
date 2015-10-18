@@ -20,7 +20,10 @@ from threadeddeleter import ThreadedDeleter
 from objectstore import ObjectStore
 import ast
 import imp
-from ConfigParser import ConfigParser
+try:
+    from configparser import ConfigParser
+except ImportError:
+    from ConfigParser import ConfigParser
 import os
 import re
 import sys
@@ -133,7 +136,7 @@ def main(argv):
     try:
         store = module.Store(parser)
     except Exception as e:
-        print(e.message)
+        print(str(e))
         return 1
 
     # Initialize threaded deleter

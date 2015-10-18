@@ -9,7 +9,10 @@ import os
 import signal
 import sys
 import threading
-import Queue
+try:
+    import queue as Queue
+except ImportError:
+    import Queue
 import time
 
 
@@ -19,7 +22,7 @@ class ThreadedDeleter:
     @staticmethod
     def output(text):
         ThreadedDeleter.output_lock.acquire()
-        print '[%s] %s' % (time.ctime(), text)
+        print('[{time}] {text}'.format(time=time.ctime(), text=text))
         ThreadedDeleter.output_lock.release()
 
     def signal_handler(self, signum, frame):
