@@ -16,6 +16,18 @@ from threadeddeleter import ThreadedDeleter
 class Store(ObjectStore):
     """A ObjectStore class for Rackspace Cloud Files"""
 
+    @classmethod
+    def get_retry_text(cls, retries):
+        """
+        Returns retry text based on the number of retries
+        :param retries: The number of retries
+        :return: A string
+        """
+        if retries == 0:
+            return 'All retries exhausted.'
+        else:
+            return 'Retrying {} more times.'.format(retries)
+
     def __init__(self, parser):
         """
         Initialize all our variables
@@ -72,10 +84,10 @@ class Store(ObjectStore):
             try:
                 containers_ = self.rax.list(prefix=prefix)
             except Exception as e:
-                ThreadedDeleter.output('List containers failed: {msg}'
+                ThreadedDeleter.output('List containers failed: {msg}.{retry}'
                                        .format(msg=e.message,
-                                               retry='retrying.' if retry != 0
-                                               else ''))
+                                               retry=self.get_retry_text(
+                                                   retry)))
                 if retry == 0:
                     return False
 
@@ -103,10 +115,9 @@ class Store(ObjectStore):
             container = self.rax.get_container(container_name)
             objects_ = container.list(marker=marker)
         except Exception as e:
-            ThreadedDeleter.output('List objects failed: {msg}'
+            ThreadedDeleter.output('List objects failed: {msg}.{retry}'
                                    .format(msg=e.message,
-                                           retry='retrying.' if retry != 0
-                                           else ''))
+                                           retry=self.get_retry_text(retry)))
             if retry == 0:
                 return False
 
@@ -181,10 +192,9 @@ class Store(ObjectStore):
             self.rax.delete_container(container, del_objects=True)
             return True
         except Exception as e:
-            ThreadedDeleter.output('Delete container failed: {msg}'
+            ThreadedDeleter.output('Delete container failed: {msg}.{retry}'
                                    .format(msg=e.message,
-                                           retry='retrying.' if retry != 0
-                                           else ''))
+                                           retry=self.get_retry_text(retry)))
             if retry == 0:
                 return False
 
