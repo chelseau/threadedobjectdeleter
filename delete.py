@@ -36,69 +36,84 @@ class Settings:
 
 pwd = os.path.abspath(os.path.dirname(__file__))
 
-# Load config
-parser = ConfigParser()
-parser.read([os.path.join(pwd, 'app.ini'),
-             os.path.expanduser('~/.objectdeleter.ini')])
 
-if not parser.has_section('deleter'):
-    print('Invalid config file')
-    sys.exit(1)
+def main(argv):
+    """
+    Main
+    :param argv: a list of arguments
+    :return: The code to exit with
+    """
+    global pwd
 
-# Process config
-for key in dict(parser.items('deleter')):
-    if hasattr(Settings, key):
-        default = getattr(Settings, key)
+    # Load config
+    parser = ConfigParser()
+    parser.read([os.path.join(pwd, 'app.ini'),
+                 os.path.expanduser('~/.objectdeleter.ini')])
 
-        value = parser.get('deleter', key)
+    if not parser.has_section('deleter'):
+        print('Invalid config file')
+        return 1
 
-        # Is this a data type we need to convert/validate?
-        for datatype in [list, bool, int, None]:
-            if datatype is not None and isinstance(default, datatype):
-                if len(value) == 0:
-                    # Empty value of data type
-                    value = datatype()
-                    datatype = None
-                break
+    # Process config
+    for key in dict(parser.items('deleter')):
+        if hasattr(Settings, key):
+            default = getattr(Settings, key)
 
-        if datatype is not None:
+            value = parser.get('deleter', key)
 
-            # Evaluate non-string data
-            try:
-                value = ast.literal_eval(value)
-            except SyntaxError:
-                print("Failed to parse {key}. Aborting execution.".format(
-                    key=key))
-                sys.exit(1)
+            # Is this a data type we need to convert/validate?
+            for datatype in [list, bool, int, None]:
+                if datatype is not None and isinstance(default, datatype):
+                    if len(value) == 0:
+                        # Empty value of data type
+                        value = datatype()
+                        datatype = None
+                    break
 
-            # Validate data type
-            if not isinstance(value, datatype):
-                print("Invalid data type of {key}. Expecting {type}".format(
-                    key=key, type=str(datatype)))
-                sys.exit(1)
+            if datatype is not None:
 
-        # Override default option
-        setattr(Settings, key, value)
+                # Evaluate non-string data
+                try:
+                    value = ast.literal_eval(value)
+                except SyntaxError:
+                    print("Failed to parse {key}. Aborting execution.".format(
+                        key=key))
+                    return 1
 
-# @TODO: Validate options
+                # Validate data type
+                if not isinstance(value, datatype):
+                    print("Invalid data type of {key}. Expecting {type}"
+                          .format(key=key, type=str(datatype)))
+                    return 1
 
-try:
-    module = imp.load_source('store',
-                             os.path.join(pwd, 'stores',
-                                          str(Settings.store).lower()) + '.py')
-    if not hasattr(module, 'Store') or not issubclass(module.Store,
-                                                      ObjectStore):
-        raise ImportError("Malformed object store module")
-except ImportError as e:
-    print("Failed to load {store} store: {err}. Ending script execution."
-          .format(store=str(Settings.store).lower(), err=str(e)))
-    sys.exit(1)
+            # Override default option
+            setattr(Settings, key, value)
 
-# Initialize object store
-store = module.Store(parser)
+    # @TODO: Validate options
 
-# Initialize threaded deleter
-deleter = ThreadedDeleter(store, Settings)
+    try:
+        module = imp.load_source('store',
+                                 os.path.join(pwd, 'stores',
+                                              str(Settings.store).lower()) +
+                                 '.py')
+        if not hasattr(module, 'Store') or not issubclass(module.Store,
+                                                          ObjectStore):
+            raise ImportError("Malformed object store module")
+    except ImportError as e:
+        print("Failed to load {store} store: {err}. Ending script execution."
+              .format(store=str(Settings.store).lower(), err=str(e)))
+        return 1
 
-with deleter:
-    deleter.delete(Settings.prefixes)
+    # Initialize object store
+    store = module.Store(parser)
+
+    # Initialize threaded deleter
+    deleter = ThreadedDeleter(store, Settings)
+
+    with deleter:
+        deleter.delete(Settings.prefixes)
+
+    return 0
+
+if __name__ == '__main__':
+    sys.exit(main(sys.argv[1:]))
