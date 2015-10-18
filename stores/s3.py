@@ -206,7 +206,7 @@ class Store(ObjectStore):
 
     def init_thread(self, local):
         """
-        Initialize thread-specific RAX connection & data list
+        Initialize thread-specific S3 connection & data list
         :param local: The Local object
         :return: None
         """
@@ -219,7 +219,7 @@ class Store(ObjectStore):
 
     def cleanup_thread(self, local):
         """
-        Cleanup thread-specific RAX connection
+        Cleanup thread-specific S3 connection
         :param local: The Local object
         :return: None
         """
