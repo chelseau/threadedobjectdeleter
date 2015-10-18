@@ -39,12 +39,14 @@ class Store(ObjectStore):
         self.objects = dict()
         self.aws = None
         self.region = ''
+        self.bulk_size = 0
         self.access_key_id = ''
         self.access_key_secret = ''
         self.page_size = 10000
 
-        options = ['access_key_id', 'access_key_secret', 'region', 'page_size']
-        optional = []
+        options = ['access_key_id', 'access_key_secret', 'region', 'page_size',
+                   'bulk_size']
+        optional = ['bulk_size']
 
         if not parser.has_section('s3'):
             raise Exception('S3 configuration is missing')
@@ -56,6 +58,9 @@ class Store(ObjectStore):
                         option))
             else:
                 setattr(self, option, parser.get('s3', option))
+
+        # Ensure data type
+        self.bulk_size = int(self.bulk_size)
 
         # Ensure data type
         self.page_size = int(self.page_size)
@@ -158,6 +163,22 @@ class Store(ObjectStore):
 
         return objects_
 
+    def delete_objects_bulk(self, local):
+        if local.size > 0:
+            for container, objects in local.data.iteritems()\
+                    if hasattr(local.data, 'iteritems')\
+                    else local.data.items():
+                try:
+                    bucket = self.aws.Bucket(container)
+                    bucket.delete_objects(Delete=dict(
+                        Objects=objects
+                    ))
+                except Exception as e:
+                    ThreadedDeleter.output('Bulk delete objects failed: {msg}.'
+                                           .format(msg=str(e)))
+        local.size = 0
+        local.data = dict()
+
     def delete_object(self, container, object, local):
         """
         Deletes an object from a given container
@@ -167,13 +188,21 @@ class Store(ObjectStore):
          variables in.
         :return: None
         """
-        try:
-            bucket = self.aws.Bucket(container)
-            object = bucket.Object(object)
-            object.delete()
-        except Exception as e:
-            ThreadedDeleter.output('Delete object failed: {msg}.'
-                                   .format(msg=str(e)))
+        if self.bulk_size <= 1:
+            try:
+                bucket = self.aws.Bucket(container)
+                object = bucket.Object(object)
+                object.delete()
+            except Exception as e:
+                ThreadedDeleter.output('Delete object failed: {msg}.'
+                                       .format(msg=str(e)))
+        else:
+            if container not in local.data:
+                local.data[container] = list()
+            local.data[container].append(dict(Key=object))
+            local.size += 1
+            if local.size >= self.bulk_size:
+                self.delete_objects_bulk(local)
 
     def init_thread(self, local):
         """
@@ -194,6 +223,9 @@ class Store(ObjectStore):
         :param local: The Local object
         :return: None
         """
+
+        # Delete any remaining objects first if using bulk deletions
+        self.delete_objects_bulk(local)
 
     def delete_container(self, container, retry=2):
         """
