@@ -181,11 +181,10 @@ class ThreadedDeleter:
             while not self.finished:
                 # Keep trying until we run out of files for object stores
                 # that don't return everything at once.
-                try:
-                    files = self.object_store.list_objects(container)
-                except Exception:
+                files = self.object_store.list_objects(container)
+                if files is False:
                     self.finish()
-                    raise
+                    sys.exit(1)
 
                 if len(files) == 0:
                     break

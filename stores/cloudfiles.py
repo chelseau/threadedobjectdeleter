@@ -88,18 +88,30 @@ class Store(ObjectStore):
 
         return containers
 
-    def list_objects(self, container_name):
+    def list_objects(self, container_name, retry=2):
         """
         Lists objects in a given container
         :param container_name: The name of the container to get objects from
-        :return: A list of objects
+        :param retry: The number of retries to use
+        :return: A list of objects or False on error
         """
         marker = None
         if container_name in self.marker:
             marker = self.marker.get(container_name)
 
-        container = self.rax.get_container(container_name)
-        objects_ = container.list(marker=marker)
+        try:
+            container = self.rax.get_container(container_name)
+            objects_ = container.list(marker=marker)
+        except Exception as e:
+            ThreadedDeleter.output('List objects failed: {msg}'
+                                   .format(msg=e.message,
+                                           retry='retrying.' if retry != 0
+                                           else ''))
+            if retry == 0:
+                return False
+
+            # Retry
+            return self.list_objects(container_name, retry - 1)
 
         if len(objects_) == 0:
             return objects_
