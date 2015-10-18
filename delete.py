@@ -90,8 +90,8 @@ try:
                                                       ObjectStore):
         raise ImportError("Malformed object store module")
 except ImportError as e:
-    print("Failed to load {store} object store. Ending script execution."
-          .format(store=str(Settings.store).lower()))
+    print("Failed to load {store} store: {err}. Ending script execution."
+          .format(store=str(Settings.store).lower(), err=str(e)))
     sys.exit(1)
 
 # Initialize object store
