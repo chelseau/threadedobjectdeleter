@@ -29,7 +29,6 @@ import sys
 class Settings:
     store = ''
     prefixes = list()
-    bulk_size = 100
     verbose = True
     max_threads = 64
     queue_size = 25000
