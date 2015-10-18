@@ -78,6 +78,9 @@ class Store(ObjectStore):
         :return: A list of containers or False on error
         """
         containers = list()
+        if len(prefixes) == 0:
+            prefixes = [None]
+
         for prefix in prefixes:
             try:
                 containers_ = self.rax.list(prefix=prefix)
