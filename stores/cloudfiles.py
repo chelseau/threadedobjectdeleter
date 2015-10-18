@@ -60,15 +60,28 @@ class Store(ObjectStore):
 
         return True
 
-    def list_containers(self, prefixes):
+    def list_containers(self, prefixes, retry=2):
         """
         Lists containers beginning with any of the provided prefixes
         :param prefixes: The (list of) prefixes to get containers for
-        :return: A list of containers
+        :param retry: The number of retries to use
+        :return: A list of containers or False on error
         """
         containers = list()
         for prefix in prefixes:
-            containers_ = self.rax.list(prefix=prefix)
+            try:
+                containers_ = self.rax.list(prefix=prefix)
+            except Exception as e:
+                ThreadedDeleter.output('List containers failed: {msg}'
+                                       .format(msg=e.message,
+                                               retry='retrying.' if retry != 0
+                                               else ''))
+                if retry == 0:
+                    return False
+
+                # Retry
+                return self.list_containers(prefixes, retry - 1)
+
             if containers_ is not None:
                 for container in containers_:
                     containers.append(container.name)

@@ -160,11 +160,10 @@ class ThreadedDeleter:
         # Fetch matching containers
         if self.verbose:
             ThreadedDeleter.output('Fetching containers...')
-        try:
-            containers = self.object_store.list_containers(prefixes)
-        except Exception:
+        containers = self.object_store.list_containers(prefixes)
+        if containers is False:
             self.finish()
-            raise
+            sys.exit(1)
 
         # Initialize and start up threads 1-max_threads
         for index in range(1, self.max_threads):
