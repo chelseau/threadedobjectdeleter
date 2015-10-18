@@ -33,15 +33,43 @@ class Store(ObjectStore):
         Initialize all our variables
         :param parser: Our config parser object
         :return: None
+        :throws: Exception on validation error
         """
 
         # Store arguments
         self.marker = dict()
         self.rax = None
-        self.region = parser.get('cloudfiles', 'region')
-        self.bulk_size = parser.get('cloudfiles', 'bulk_size')
-        self.username = parser.get('cloudfiles', 'username')
-        self.api_key = parser.get('cloudfiles', 'api_key')
+        self.region = ''
+        self.bulk_size = 0
+        self.username = ''
+        self.api_key = ''
+
+        options = ['region', 'bulk_size', 'username', 'api_key']
+        optional = ['bulk_size']
+
+        if not parser.has_section('cloudfiles'):
+            raise Exception('CloudFiles configuration is missing')
+
+        for option in options:
+            if not parser.has_option('cloudfiles', option):
+                if option not in optional:
+                    raise Exception('Missing cloudfiles option: {}'.format(
+                        option))
+            else:
+                setattr(self, option, parser.get('cloudfiles', option))
+
+        # Ensure data type
+        self.bulk_size = int(self.bulk_size)
+
+        # Validate options
+        if len(self.region) == 0:
+            raise Exception('No region specified')
+        if len(self.username) == 0:
+            raise Exception('No username specified')
+        if len(self.api_key) == 0:
+            raise Exception('No API key specified')
+
+        # Set identity type
         pyrax.settings.set('identity_type', 'rackspace')
 
     def login(self):

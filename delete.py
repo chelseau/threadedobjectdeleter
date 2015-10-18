@@ -122,7 +122,11 @@ def main(argv):
         return 1
 
     # Initialize object store
-    store = module.Store(parser)
+    try:
+        store = module.Store(parser)
+    except Exception as e:
+        print(e.message)
+        return 1
 
     # Initialize threaded deleter
     deleter = ThreadedDeleter(store, Settings)
