@@ -3,7 +3,7 @@
 __author__ = "Chelsea Urquhart"
 __copyright__ = "Copyright 2015, Chelsea Urquhart"
 __license__ = "GPL"
-__email__ = "info@chelseau.com"
+__email__ = "me@chelseau.com"
 
 from abc import ABCMeta, abstractmethod
 

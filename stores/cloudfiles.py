@@ -4,7 +4,7 @@ __author__ = "Chelsea Urquhart"
 __copyright__ = "Copyright 2015, Chelsea Urquhart"
 __credits__ = "Rackspace [http://tinyurl.com/os95vts]"
 __license__ = "GPL"
-__email__ = "info@chelseau.com"
+__email__ = "me@chelseau.com"
 
 import os
 import pyrax
