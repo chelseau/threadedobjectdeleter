@@ -38,21 +38,20 @@ class ThreadedDeleter:
         # Throw signal
         os.kill(os.getpid(), signum)
 
-    def __init__(self, object_store, queue_size, max_threads, verbose=False):
+    def __init__(self, object_store, settings):
         """
         Initializes a threaded deleter class.
         :param object_store: The object store we're working with
-        :param max_threads: The maximum number of threads to use at once
-        :param verbose: Enable output?
+        :param settings: The settings object to get our settings from
         :return: None
         """
         self.object_store = object_store
-        self.queue_size = queue_size
-        self.max_threads = max_threads
-        self.verbose = verbose
+        self.queue_size = settings.queue_size
+        self.max_threads = settings.max_threads
+        self.verbose = settings.verbose
 
         self.lock = threading.Lock()
-        self.queue = Queue.Queue(queue_size)
+        self.queue = Queue.Queue(settings.queue_size)
         self.finished = False
         self.deleted_objects = 0
         self.threads = []

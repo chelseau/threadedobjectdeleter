@@ -1,36 +1,41 @@
 """cloudfiles.py: Contains a CloudFiles implementation of ObjectStore."""
 
 __author__ = "Chelsea Urquhart"
-__copyright__ = "Copyright 2015, Chelsea Urquhart"
+__copyright__ = "Copyright 2014, Chelsea Urquhart"
 __credits__ = "Rackspace [http://tinyurl.com/os95vts]"
 __license__ = "GPL"
 __email__ = "info@chelseau.com"
 
 from StringIO import StringIO
 from urllib import quote
-
+import os
+import sys
 import pycurl
 from lxml import builder, etree
+
+sys.path.insert(0, os.path.join(os.path.abspath(os.path.dirname(__file__)),
+                                '..'))
 
 from objectstore import ObjectStore
 from threadeddeleter import ThreadedDeleter
 
 
-class CloudFiles(ObjectStore):
+class Store(ObjectStore):
     """A ObjectStore class for Rackspace Cloud Files"""
 
-    def __init__(self, username, api_key, region, login_url, bulk_size):
+    def __init__(self, parser):
         """
         Initialize all our variables
+        :param parser: Our config parser object
         :return: None
         """
 
         # Store arguments
-        self.username = username
-        self.api_key = api_key
-        self.region = region
-        self.login_url = login_url
-        self.bulk_size = bulk_size
+        self.username = parser.get('cloudfiles', 'username')
+        self.api_key = parser.get('cloudfiles', 'api_key')
+        self.region = parser.get('cloudfiles', 'region')
+        self.login_url = parser.get('cloudfiles', 'login_url')
+        self.bulk_size = parser.get('cloudfiles', 'bulk_size')
         self.force_delete = False
         self.marker = {}
 
