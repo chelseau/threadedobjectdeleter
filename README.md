@@ -1,15 +1,14 @@
 Threaded Object Deleter
 =======================
 
-A Multi-threaded object deleter. It currently supports Rackspace cloud files.
+A Multi-threaded object deleter. It currently supports Rackspace Cloud Files
+and Amazon S3.
 
 Issues
 ------
 Please report any issues and send any pull requests to [threadedobjectdeleter](https://github.com/chelseau/threadedobjectdeleter)
 
-I've only implemented Cloud Files so far because that's all I need. If you have
-a use for other object stores (AWS, FTP, etc) let me know and I'll look into
-implementing them.
+I'll also gladly accept feature requests.
 
 Usage
 -----
