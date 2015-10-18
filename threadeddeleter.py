@@ -1,7 +1,7 @@
 """threadeddeleter.py: Contains the threaded deleter class."""
 
 __author__ = "Chelsea Urquhart"
-__copyright__ = "Copyright 2014, Chelsea Urquhart"
+__copyright__ = "Copyright 2015, Chelsea Urquhart"
 __license__ = "GPL"
 __email__ = "me@chelseau.com"
 
