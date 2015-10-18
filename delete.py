@@ -47,11 +47,19 @@ def main(argv):
 
     # Load config
     parser = ConfigParser()
-    parser.read([os.path.join(pwd, 'app.ini'),
-                 os.path.expanduser('~/.objectdeleter.ini')])
+    if len(argv) == 0:
+        parser.read([os.path.join(pwd, 'app.ini'),
+                     os.path.expanduser('~/.objectdeleter.ini')])
+    else:
+        if not os.path.exists(argv[0]):
+            print('File not found: {}'.format(argv[0]))
+            return 1
+        parser.read(argv[0])
 
     if not parser.has_section('deleter'):
-        print('Invalid config file')
+        print('Invalid config file. By default app.ini and'
+              ' ~/.objectdeleter.ini will be used. However, you may call ' +
+              __file__ + ' somefile.ini to override this.')
         return 1
 
     # Process config
