@@ -15,6 +15,7 @@ with open(os.path.join(here, 'README.md')) as f:
 
 requires = [
     'pyrax==1.9.5',
+    'boto3==1.1.4',
 ]
 
 setup(
