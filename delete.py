@@ -22,6 +22,7 @@ import ast
 import imp
 from ConfigParser import ConfigParser
 import os
+import re
 import sys
 
 
@@ -88,7 +89,24 @@ def main(argv):
             # Override default option
             setattr(Settings, key, value)
 
-    # @TODO: Validate options
+    # Validate options
+
+    # Validate store. This is just responsible for making sure arbitrary data
+    # can't be injected here. Actually loading will happen later.
+    Settings.store = re.sub(r'[^\w\s]', '', Settings.store)
+    if len(Settings.store) == 0:
+        print("Object store module not specified. Ending script execution.")
+        return 1
+
+    if Settings.max_threads <= 0:
+        print("Maximum threads is too low. It must be at least 1."
+              " Ending script execution.")
+        return 1
+
+    if Settings.queue_size < 1:
+        print("Maximum queue size is too low. It must be at least 1."
+              " Ending script execution.")
+        return 1
 
     try:
         module = imp.load_source('store',
