@@ -1,7 +1,7 @@
 """objectstore.py: An abstract ObjectStore class."""
 
 __author__ = "Chelsea Urquhart"
-__copyright__ = "Copyright 2014, Chelsea Urquhart"
+__copyright__ = "Copyright 2015, Chelsea Urquhart"
 __license__ = "GPL"
 __email__ = "info@chelseau.com"
 
