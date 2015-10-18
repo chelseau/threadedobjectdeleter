@@ -14,12 +14,9 @@ implementing them.
 Usage
 -----
 The delete.py script will work almost out of the box. You'll need to configure
-with your credentials, prefixes you want to delete (default is to delete
-everything), and if desired adjust the max threads.
-
-I used a default of 100 max threads  but most of my testing was with 500. There
-is no performance improvement with that many threads though because a lot of
-errors occur and as such more deletion requests have to be sent.
+app.ini (see sample.ini for example usage) with your credentials, prefixes you
+want to delete (default is to delete everything), and if desired adjust the max
+threads.
 
 Feel free to use this for whatever you want! Hopefully it'll be useful to
 someone!
