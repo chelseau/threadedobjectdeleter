@@ -168,7 +168,11 @@ class Store(ObjectStore):
             for container, objects in local.data.iteritems()\
                     if hasattr(local.data, 'iteritems')\
                     else local.data.items():
-                self.rax.bulk_delete(container, objects)
+                try:
+                    self.rax.bulk_delete(container, objects)
+                except Exception as e:
+                    ThreadedDeleter.output('Bulk delete objects failed: {msg}.'
+                                           .format(msg=str(e)))
         local.size = 0
         local.data = dict()
 
@@ -182,7 +186,11 @@ class Store(ObjectStore):
         :return: None
         """
         if self.bulk_size <= 1:
-            self.rax.delete_object(container, object)
+            try:
+                self.rax.delete_object(container, object)
+            except Exception as e:
+                ThreadedDeleter.output('Delete object failed: {msg}.'
+                                       .format(msg=str(e)))
         else:
             if container not in local.data:
                 local.data[container] = list()
