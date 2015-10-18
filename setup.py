@@ -20,7 +20,7 @@ requires = [
 
 setup(
     name='Threaded Object Deleter',
-    version="2.0.0",
+    version="2.0.1",
     author=__author__,
     author_email=__email__,
     description='A lightweight, extremely fast deleter for various objects.',
