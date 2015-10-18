@@ -150,6 +150,12 @@ class ThreadedDeleter:
         self.lock.release()
 
     def delete(self, prefixes):
+        """
+        Deletes all files in all containers identified by prefix
+
+        :param prefixes: A list of prefixes
+        :return: None
+        """
         # Login
         if self.verbose:
             ThreadedDeleter.output('Logging in...')
