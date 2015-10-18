@@ -170,10 +170,23 @@ class Store(ObjectStore):
         # Delete any remaining objects first if using bulk deletions
         self.delete_objects_bulk(local)
 
-    def delete_container(self, container):
+    def delete_container(self, container, retry=2):
         """
         Deletes a container
         :param container: The name of the container to get objects from
+        :param retry: The number of retries to use
         :return: None
         """
-        self.rax.delete_container(container, del_objects=True)
+        try:
+            self.rax.delete_container(container, del_objects=True)
+            return True
+        except Exception as e:
+            ThreadedDeleter.output('Delete container failed: {msg}'
+                                   .format(msg=e.message,
+                                           retry='retrying.' if retry != 0
+                                           else ''))
+            if retry == 0:
+                return False
+
+            # Retry
+            return self.delete_container(container, retry - 1)

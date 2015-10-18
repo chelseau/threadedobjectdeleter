@@ -226,11 +226,9 @@ class ThreadedDeleter:
         for container in containers:
             if self.verbose:
                 ThreadedDeleter.output('Deleting %s...' % container)
-            try:
-                self.object_store.delete_container(container)
-            except Exception:
+            if not self.object_store.delete_container(container):
                 self.finish()
-                raise
+                sys.exit(1)
 
         # Calculate Duration
         end_time = time.time()
