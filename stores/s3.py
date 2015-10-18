@@ -46,7 +46,7 @@ class Store(ObjectStore):
 
         options = ['access_key_id', 'access_key_secret', 'region', 'page_size',
                    'bulk_size']
-        optional = ['bulk_size']
+        optional = ['bulk_size', 'page_size']
 
         if not parser.has_section('s3'):
             raise Exception('S3 configuration is missing')

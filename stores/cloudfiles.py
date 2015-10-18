@@ -43,9 +43,10 @@ class Store(ObjectStore):
         self.bulk_size = 0
         self.username = ''
         self.api_key = ''
+        self.page_size = 10000
 
-        options = ['region', 'bulk_size', 'username', 'api_key']
-        optional = ['bulk_size']
+        options = ['region', 'bulk_size', 'username', 'api_key', 'page_size']
+        optional = ['bulk_size', 'page_size']
 
         if not parser.has_section('cloudfiles'):
             raise Exception('CloudFiles configuration is missing')
@@ -61,6 +62,9 @@ class Store(ObjectStore):
         # Ensure data type
         self.bulk_size = int(self.bulk_size)
 
+        # Ensure data type
+        self.page_size = int(self.page_size)
+
         # Validate options
         if len(self.region) == 0:
             raise Exception('No region specified')
@@ -68,6 +72,8 @@ class Store(ObjectStore):
             raise Exception('No username specified')
         if len(self.api_key) == 0:
             raise Exception('No API key specified')
+        if self.page_size <= 0:
+            raise Exception('Invalid page size specified')
 
         # Set identity type
         pyrax.settings.set('identity_type', 'rackspace')
@@ -142,7 +148,7 @@ class Store(ObjectStore):
 
         try:
             container = self.rax.get_container(container_name)
-            objects_ = container.list(marker=marker)
+            objects_ = container.list(marker=marker, limit=self.page_size)
         except Exception as e:
             ThreadedDeleter.output('List objects failed: {msg}.{retry}'
                                    .format(msg=str(e),
