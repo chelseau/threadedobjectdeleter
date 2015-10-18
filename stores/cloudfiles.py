@@ -36,9 +36,7 @@ class Store(ObjectStore):
         """
 
         # Store arguments
-        self.force_delete = False
         self.marker = dict()
-        self.api_endpoint = None
         self.rax = None
         self.region = parser.get('cloudfiles', 'region')
         self.bulk_size = parser.get('cloudfiles', 'bulk_size')
@@ -157,8 +155,7 @@ class Store(ObjectStore):
                 local.data[container] = list()
             local.data[container].append(object)
             local.size += 1
-            if local.size >= self.bulk_size or self.force_delete:
-                self.force_delete = False
+            if local.size >= self.bulk_size:
                 self.delete_objects_bulk(local)
 
     def init_thread(self, local):
