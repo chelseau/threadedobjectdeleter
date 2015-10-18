@@ -104,7 +104,7 @@ def main(argv):
 
     # Validate store. This is just responsible for making sure arbitrary data
     # can't be injected here. Actually loading will happen later.
-    Settings.store = re.sub(r'[^\w\s]', '', Settings.store)
+    Settings.store = re.sub(r'[^\w\s\d]', '', Settings.store)
     if len(Settings.store) == 0:
         print("Object store module not specified. Ending script execution.")
         return 1
