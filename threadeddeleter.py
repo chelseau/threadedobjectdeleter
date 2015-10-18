@@ -7,6 +7,7 @@ __email__ = "info@chelseau.com"
 
 import os
 import signal
+import sys
 import threading
 import Queue
 import time
@@ -152,11 +153,9 @@ class ThreadedDeleter:
         # Login
         if self.verbose:
             ThreadedDeleter.output('Logging in...')
-        try:
-            self.object_store.login()
-        except Exception:
+        if not self.object_store.login():
             self.finish()
-            raise
+            sys.exit(1)
 
         # Fetch matching containers
         if self.verbose:

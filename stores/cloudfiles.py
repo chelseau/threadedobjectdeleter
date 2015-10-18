@@ -10,6 +10,7 @@ import os
 import pyrax
 import sys
 from objectstore import ObjectStore
+from threadeddeleter import ThreadedDeleter
 
 
 class Store(ObjectStore):
@@ -29,18 +30,35 @@ class Store(ObjectStore):
         self.rax = None
         self.region = parser.get('cloudfiles', 'region')
         self.bulk_size = parser.get('cloudfiles', 'bulk_size')
+        self.username = parser.get('cloudfiles', 'username')
+        self.api_key = parser.get('cloudfiles', 'api_key')
         pyrax.settings.set('identity_type', 'rackspace')
-        pyrax.set_credentials(username=parser.get('cloudfiles', 'username'),
-                              api_key=parser.get('cloudfiles', 'api_key'))
 
     def login(self):
         """
         Logs into cloud files. Note that this is on the main thread.
         init_thread is responsible for initializing individual threads.
-        :return: A cloudfiles object
+        :return: True on success, false on failure
         """
 
-        self.rax = pyrax.connect_to_cloudfiles(self.region, True)
+        try:
+            pyrax.set_credentials(username=self.username,
+                                  api_key=self.api_key)
+            self.rax = pyrax.connect_to_cloudfiles(self.region, True)
+            if self.rax is None:
+                ThreadedDeleter.output('Unknown error occured while connecting'
+                                       ' to CloudFiles.')
+                return False
+        except pyrax.exceptions.AuthenticationFailed as e:
+            ThreadedDeleter.output('Authentication failed: {msg}'.format(
+                msg=e.message))
+            return False
+        except pyrax.exceptions.PyraxException as e:
+            ThreadedDeleter.output('Unknown error occurred: {msg}'.format(
+                msg=e.message))
+            return False
+
+        return True
 
     def list_containers(self, prefixes):
         """
