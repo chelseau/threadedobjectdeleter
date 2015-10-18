@@ -100,8 +100,7 @@ class ThreadedDeleter:
                 try:
                     self.object_store.delete_object(container, object, local)
                 except Exception:
-                    self.lock.release()
-                    self.finish()
+                    self.finished = True
                     raise
             else:
                 self.lock.release()
@@ -168,47 +167,43 @@ class ThreadedDeleter:
         start_time = time.time()
 
         # Iterate the list of containers to delete everything
-        for final in [False, True]:
-            for container in containers:
-                if self.verbose:
-                    ThreadedDeleter.output('Processing %s...' % container)
-                final = False
-                while True:
-                    # Keep trying until we run out of files for object stores
-                    # that don't return everything at once.
-                    try:
-                        files = self.object_store.list_objects(container, final)
-                    except Exception:
-                        self.finish()
-                        raise
+        for container in containers:
+            if self.verbose:
+                ThreadedDeleter.output('Processing %s...' % container)
+            while not self.finished:
+                # Keep trying until we run out of files for object stores
+                # that don't return everything at once.
+                try:
+                    files = self.object_store.list_objects(container)
+                except Exception:
+                    self.finish()
+                    raise
 
-                    if len(files) == 0:
-                        break
-                    for file in files:
-                        data.append((container, file))
-                        # continue
-                        if len(data) > self.max_threads / 2:
-                            # We've got enough of a buffer to get going. Lets
-                            # do it!
-                            self.add_to_queue(data)
-                            data = []
-                    while self.queue.qsize() > self.max_threads / 2:
-                        # Sleep for a second before we retry this container.
-                        # There were likely errors on some files, so we'll want
-                        # to retry those.
-                        time.sleep(1)
-                    # Add any leftovers to the queue
-                    if len(data) > 0:
+                if len(files) == 0:
+                    break
+                for file in files:
+                    data.append((container, file))
+                    # continue
+                    if len(data) > self.max_threads / 2:
+                        # We've got enough of a buffer to get going. Lets
+                        # do it!
                         self.add_to_queue(data)
                         data = []
-                if final:
-                    ThreadedDeleter.output(
-                        'Finished Processing %s...' % container)
-                    # All out of files!
-            # Wait for all the data to be processed before we continue.
-            while not self.queue.empty():
-                time.sleep(1 / 10)
-                pass
+                while self.queue.qsize() > self.max_threads / 2:
+                    # Sleep for a second before we retry this container.
+                    # There were likely errors on some files, so we'll want
+                    # to retry those.
+                    time.sleep(1)
+                # Add any leftovers to the queue
+                if len(data) > 0:
+                    self.add_to_queue(data)
+                    data = []
+            ThreadedDeleter.output('Finished Processing %s...' % container)
+            # All out of files!
+        # Wait for all the data to be processed before we continue.
+        while not self.queue.empty():
+            time.sleep(1 / 10)
+            pass
 
         # Set the finished variable so all the threads will die when they're
         # done working
