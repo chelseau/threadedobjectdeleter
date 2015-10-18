@@ -36,7 +36,7 @@ class Store(ObjectStore):
     def login(self):
         """
         Logs into cloud files. Note that this is on the main thread.
-        init_local is responsible for initializing individual threads.
+        init_thread is responsible for initializing individual threads.
         :return: A cloudfiles object
         """
 
@@ -107,7 +107,7 @@ class Store(ObjectStore):
                 self.force_delete = False
                 self.delete_objects_bulk(local)
 
-    def init_local(self, local):
+    def init_thread(self, local):
         """
         Initialize thread-specific RAX connection & data list
         :param local: The Local object
@@ -117,7 +117,7 @@ class Store(ObjectStore):
         local.data = dict()
         local.size = 0
 
-    def cleanup_local(self, local):
+    def cleanup_thread(self, local):
         """
         Cleanup thread-specific RAX connection
         :param local: The Local object

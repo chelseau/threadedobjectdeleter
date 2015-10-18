@@ -85,9 +85,14 @@ class ThreadedDeleter:
         :param thread_id: The numeric ID of the currently running thread
         :return: None
         """
-        # Setup a cURL instance for this thread
+        # Setup a threadlocal instance for this thread
         local = threading.local()
-        self.object_store.init_local(local)
+        if hasattr(self.object_store, 'init_local'):
+            # Legacy support
+            self.object_store.init_local(local)
+
+        self.object_store.init_thread(local)
+
         # Is there more data to process?
         while not self.finished:
             self.lock.acquire()
@@ -106,7 +111,12 @@ class ThreadedDeleter:
                 self.lock.release()
                 time.sleep(1)
                 # Sleep for 1 second
-        self.object_store.cleanup_local(local)
+
+        if hasattr(self.object_store, 'cleanup_local'):
+            # Legacy support
+            self.object_store.cleanup_local(local)
+
+        self.object_store.cleanup_thread(local)
 
     def add_to_queue(self, data):
         """

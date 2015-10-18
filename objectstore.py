@@ -48,7 +48,7 @@ class ObjectStore:
         """
 
     @abstractmethod
-    def init_local(self, local):
+    def init_thread(self, local):
         """
         Initialize anything needed in the Local object for a thread
         :param local: The Local object
@@ -56,7 +56,7 @@ class ObjectStore:
         """
 
     @abstractmethod
-    def cleanup_local(self, local):
+    def cleanup_thread(self, local):
         """
         Cleanup anything that needs cleaning up in the Local object for a thread
         :param local: The Local object
