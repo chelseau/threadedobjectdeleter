@@ -179,11 +179,11 @@ class Store(ObjectStore):
         local.size = 0
         local.data = dict()
 
-    def delete_object(self, container, object, local):
+    def delete_object(self, container, object_, local):
         """
         Deletes an object from a given container
         :param container: The name of the container to get objects from
-        :param object: The name of the object to delete
+        :param object_: The name of the object to delete
         :param local: A Local class object for storing thread-specific
          variables in.
         :return: None
@@ -191,15 +191,15 @@ class Store(ObjectStore):
         if self.bulk_size <= 1:
             try:
                 bucket = self.aws.Bucket(container)
-                object = bucket.Object(object)
-                object.delete()
+                object_ = bucket.Object(object_)
+                object_.delete()
             except Exception as e:
                 ThreadedDeleter.output('Delete object failed: {msg}.'
                                        .format(msg=str(e)))
         else:
             if container not in local.data:
                 local.data[container] = list()
-            local.data[container].append(dict(Key=object))
+            local.data[container].append(dict(Key=object_))
             local.size += 1
             if local.size >= self.bulk_size:
                 self.delete_objects_bulk(local)

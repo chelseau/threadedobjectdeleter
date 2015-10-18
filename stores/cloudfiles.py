@@ -176,25 +176,25 @@ class Store(ObjectStore):
         local.size = 0
         local.data = dict()
 
-    def delete_object(self, container, object, local):
+    def delete_object(self, container, object_, local):
         """
         Deletes an object from a given container
         :param container: The name of the container to get objects from
-        :param object: The name of the object to delete
+        :param object_: The name of the object to delete
         :param local: A Local class object for storing thread-specific
          variables in.
         :return: None
         """
         if self.bulk_size <= 1:
             try:
-                self.rax.delete_object(container, object)
+                self.rax.delete_object(container, object_)
             except Exception as e:
                 ThreadedDeleter.output('Delete object failed: {msg}.'
                                        .format(msg=str(e)))
         else:
             if container not in local.data:
                 local.data[container] = list()
-            local.data[container].append(object)
+            local.data[container].append(object_)
             local.size += 1
             if local.size >= self.bulk_size:
                 self.delete_objects_bulk(local)

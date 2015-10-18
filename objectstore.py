@@ -37,11 +37,11 @@ class ObjectStore:
         """
 
     @abstractmethod
-    def delete_object(self, container, object, local):
+    def delete_object(self, container, object_, local):
         """
         Deletes an object from a given container
         :param container: The name of the container to get objects from
-        :param object: The name of the object to delete
+        :param object_: The name of the object to delete
         :param local: A Local class object for storing thread-specific
          variables in.
         :return: None
