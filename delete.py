@@ -41,6 +41,10 @@ parser = ConfigParser()
 parser.read([os.path.join(pwd, 'app.ini'),
              os.path.expanduser('~/.objectdeleter.ini')])
 
+if not parser.has_section('deleter'):
+    print('Invalid config file')
+    sys.exit(1)
+
 # Process config
 for key in dict(parser.items('deleter')):
     if hasattr(Settings, key):
